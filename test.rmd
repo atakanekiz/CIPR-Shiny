@@ -1,0 +1,44 @@
+
+
+```{r, eval=F}
+
+ann <- readRDS("data/immgen_annot.rds")
+
+ann$reference_cell_type <- gsub("stem\\-Progenitor", "Stem-Progenitor", ann$reference_cell_type)
+ann$reference_cell_type <- gsub("Eosionphil", "Eosinophil", ann$reference_cell_type)
+ann$reference_cell_type <- gsub("T\\-cell", "T cell", ann$reference_cell_type)
+
+levels(as.factor(ann$reference_cell_type))
+
+ann$reference_cell_type <- as.factor(ann$reference_cell_type)
+
+saveRDS(ann, "data/immgen_annot.rds")
+
+```
+
+
+```{r}
+
+levels(ann$reference_cell_type)
+
+```
+
+
+
+```{r}
+
+immdat <- readRDS("data/immgen.rds")
+
+immratio <- readRDS("data/immgen_recalc_ratio.rds")
+
+# columns are the same order and the have the same name
+sum(colnames(immdat) != colnames(immratio))
+
+
+sum(ann$short_name != colnames(immratio)[2:dim(immratio)[2]])
+
+
+
+```
+
+

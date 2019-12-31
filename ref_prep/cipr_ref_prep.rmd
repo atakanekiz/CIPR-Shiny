@@ -1,0 +1,192 @@
+---
+title: "Prepare other reference datasets for CIPR"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+---
+
+
+# Import data
+
+
+```{r}
+
+suppressPackageStartupMessages(library(SingleR))
+suppressPackageStartupMessages(library(SummarizedExperiment))
+
+
+
+dice <- DatabaseImmuneCellExpressionData()
+
+msrnaseq <- MouseRNAseqData()
+
+immgen <- ImmGenData()
+
+monaco <- MonacoImmuneData()
+
+blueprint <- BlueprintEncodeData()
+
+hpca <- HumanPrimaryCellAtlasData()
+
+hema <- NovershternHematopoieticData()
+
+sumexprs <- list(dice = dice, 
+                 msrnaseq = msrnaseq,
+                 immgen = immgen,
+                 monaco = monaco, 
+                 blueprint = blueprint, 
+                 hpca = hpca, 
+                 hema = hema)
+
+
+
+```
+
+
+# Prepare expression/sample data
+
+## Automate processing with a function
+
+```{r}
+
+
+exprep <- function(sumexp_list){
+  
+  require(tibble)
+  require(SummarizedExperiment)
+  require(dplyr)
+  
+  
+  exp_dat <- list()
+  sample_dat <- list()
+  
+  
+  for(i in names(sumexp_list)){
+    
+    obj <- sumexp_list[[i]]
+    
+    # Prep expression data
+    dat <- as.data.frame(assay(obj))
+    
+    if(i == "dice") colnames(dat) <- make.names(colnames(dat), unique = T)
+    
+    dat_colnames <- colnames(dat)
+    
+    dat <- add_column(dat, Gene=rownames(dat), .after = 0)
+    
+    exp_dat[[i]] <- dat
+    
+    # Prep sample data
+    smpl <- as.data.frame(colData(obj))
+    
+    smpl <- smpl %>%
+      add_column(short_name = rownames(smpl), .after = 0) %>%
+      rename(reference_cell_type = label.main,
+             long_name = label.fine) %>%
+      mutate(description = "N/A")
+    
+    
+    
+    sample_names <- smpl$short_name
+    
+    smpl$reference_cell_type <- factor(smpl$reference_cell_type)
+    
+    sample_dat[[i]] <- smpl
+    
+    
+    
+    if(sum(dat_colnames != sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched.")
+    
+    
+  }
+  
+  
+  sample_dat <<- sample_dat
+  exp_dat <<- exp_dat
+  
+}
+
+
+
+```
+
+
+## Prepare data
+
+```{r}
+
+exprep(sumexp_list = sumexprs)
+
+savefun <- function(datlist, savename){
+  
+  for(i in names(datlist)){
+    
+    saveRDS(datlist[[i]], file = paste0(i, "_", savename, ".rds"))
+    
+    
+  }
+  
+}
+
+
+savefun(exp_dat, savename = "expr")
+savefun(sample_dat, savename = "samples")
+
+```
+
+
+
+## Export as csv
+
+For external testing of CIPR
+
+```{r}
+
+write.csv(exp_dat$blueprint, file = "blueprint_exprs.csv", row.names = F)
+write.csv(sample_dat$blueprint, file="blueprint_sample.csv", row.names = F)
+
+write.csv(exp_dat$hpca, file = "hpca_expr.csv", row.names = F)
+write.csv(sample_dat$hpca, file="hpca_sample.csv", row.names = F)
+
+```
+
+
+# Reference cell type breakdown
+
+```{r}
+
+helper <- function(datlist){
+  
+  for(i in names(datlist)){
+    
+    
+    message(i)
+    
+    print(
+      levels(datlist[[i]]$reference_cell_type)
+    )
+    
+  }
+    
+}
+
+
+helper(sample_dat)
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
