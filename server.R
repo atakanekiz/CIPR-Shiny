@@ -7,6 +7,7 @@ server <- function(input, output){
   library(dplyr)
   library(ggpubr)
   library(gtools)
+  library(shinyWidgets)
   
   # Max allowed size of the for the uploaded csv files
   options(shiny.maxRequestSize=75*1024^2) 
@@ -44,6 +45,29 @@ server <- function(input, output){
                            ".csv"))
     }
   })
+  
+  # Select reference cell subsets to analyze
+  output$ui_sel_subsets <- renderUI ({
+    
+    if(input$sel_reference == "ImmGen"){
+      
+      pickerInput("cell_subsets", "Select reference cell subsets to analyze",
+                  multiple = T,
+                  choices = c("B cell", "Basophil", "DC", "Eosinophil", "gd-T cell",
+                              "Granulocyte", "ILC-1", "ILC-2", "ILC-3", "Macrophage",
+                              "Mast cell", "Monocyte", "NK cell", "NKT cell", "Pre-B cell",
+                              "Pre-T cell", "Stem-Progenitor", "Stromal", "T cell", "Treg"),
+                  selected = c("B cell", "Basophil", "DC", "Eosinophil", "gd-T cell",
+                               "Granulocyte", "ILC-1", "ILC-2", "ILC-3", "Macrophage",
+                               "Mast cell", "Monocyte", "NK cell", "NKT cell", "Pre-B cell",
+                               "Pre-T cell", "Stem-Progenitor", "Stromal", "T cell", "Treg"),
+                  options = list(`actions-box` = TRUE))
+      
+    }
+    
+  })
+  
+  
   
   # Create a dynamic UI object to enable upload dialog upon selection of 'Custom'
   output$ui_sel_ref_annot <- renderUI ({
@@ -95,8 +119,6 @@ server <- function(input, output){
     
       if(is.null(inFile) & input$example_data == T){
         
-        
-        req(input$run)
         
         dat <- read.csv("data/Trimmed_cluster_signatures.csv",
                         check.names = T,
@@ -227,18 +249,61 @@ server <- function(input, output){
   # Delay slider update
   var_filt <- reactive({input$var_filter}) %>% debounce(750)
   
+  
+  
+  ################################################################################################################################
+  
+  # Keep selected reference subsets in analysis
+  subsets_in_analysis <- reactive({
+    
+    if(input$sel_reference == "ImmGen"){
+      
+      
+      select_positions <- which(reference_annotation()[, "reference_cell_type"] %in% input$cell_subsets)
+      
+      # Bump positions by one (the corresponding column number due to first column being gene name in ref)
+      
+      select_positions <- select_positions + 1
+      
+      # Append position 1 to select gene column
+      
+      select_positions <- c(1, select_positions)  # make this prettier by using name matching (no ordering is needed)
+      
+      select_positions
+     
+      
+    } else if(input$sel_reference == "Custom"){ 
+      # expand on this to enable factor level matching from custom files
+    }
+    
+    
+      
+    
+  })
+  
+  
+  
+  
+  ################################################################################################################################
+  
+  
+  
+  
   # Read reference dataset
   ref_data <- reactive({
     
     if(grepl("logFC", input$comp_method)){
     
 
-      if(input$sel_reference == "ImmGen"){
+    if(input$sel_reference == "ImmGen"){
         
         # Calculated from immgen data by taking the ratio of gene expression per cluster to the overall average
         # and log transforming these values. This object is prepared separately to reduce compute time here
 
-        reference <- as.data.frame(readRDS("data/immgen_recalc_ratio.rds"))
+        # reference <- as.data.frame(readRDS("data/immgen_recalc_ratio.rds"))
+
+      # Read main expression dataframe instead      
+       reference <- as.data.frame(readRDS("data/immgen.rds"))
         
         # Name of the gene column in reference data
         ref_gene_column <<- grep("gene", colnames(reference), ignore.case = T, value = T)
@@ -266,6 +331,7 @@ server <- function(input, output){
         
         ref_gene_column <<- grep("gene", colnames(reference), ignore.case = T, value = T)
         
+      }
         
         # Calculate row means for each gene (mean expression across the reference cell types)
         gene_avg <- rowMeans(reference[, !colnames(reference) %in% ref_gene_column])
@@ -287,7 +353,7 @@ server <- function(input, output){
         colnames(reference)[1] <- ref_gene_column
         
 
-      }
+      # } # moved the ifelse closer up
       
     } else {
       
@@ -317,15 +383,21 @@ server <- function(input, output){
     
     # Apply quantile filtering
     
-    if(input$sel_reference == "ImmGen"){
-      
-      var_vec <- readRDS("data/var_vec.rds")
-      
-      keep_var <- quantile(var_vec, probs = 1-var_filt()/100, na.rm = T)
-      
-      keep_genes <- var_vec >= keep_var
-      
-    } else{
+    # if(input$sel_reference == "ImmGen"){
+    #   
+    #   var_vec <- readRDS("data/var_vec.rds")
+    #   
+    #   keep_var <- quantile(var_vec, probs = 1-var_filt()/100, na.rm = T)
+    #   
+    #   keep_genes <- var_vec >= keep_var
+    #   
+    # } else{
+    
+    # Subset the reference to the relevant subsets in analysis
+    reference <- reference[, subsets_in_analysis()]
+    
+    
+    if(var_filt() != 100){
       
       var_vec <- apply(reference[, !colnames(reference) %in% ref_gene_column], 1, var, na.rm=T)
       
@@ -333,11 +405,13 @@ server <- function(input, output){
       
       keep_genes <- var_vec >= keep_var
       
-    }
+    # } # removed ifelse condition to apply filtering when the whole ref dataframe is not used
     
     
     # Return reference data frame
     as.data.frame(reference[keep_genes, ])
+    
+    } else {as.data.frame(reference)}
     
   })
   
@@ -364,6 +438,11 @@ server <- function(input, output){
       
     }
   })
+  
+
+  
+  
+  
   
   ################################################################################################################################
   # Define a reactive cluster object that will store cluster information
@@ -400,7 +479,9 @@ server <- function(input, output){
   
   ################################################################################################################################
   # Compare user_data against reference file
-  analyzed_df <- reactive({
+  analyzed_df <- eventReactive(input$run, {
+    
+    req(input$run)
     
     if(grepl("logFC", input$comp_method)){
     
@@ -703,7 +784,7 @@ server <- function(input, output){
     
   }) # close analyzed_df reactive expression
   
-  
+
   
   ################################################################################################################################
   # Generate plotting area dynamically for individual cluster plots

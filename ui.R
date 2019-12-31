@@ -32,6 +32,16 @@ ui <- fluidPage(
                               choices = c("ImmGen", "Custom"), 
                               selected = "ImmGen"), 
                  
+                 # horizontal line
+                 tags$hr(), 
+                 
+                 # Setup cell reference cell subset selector
+                 conditionalPanel("input.sel_reference == 'ImmGen'",
+                                  uiOutput("ui_sel_subsets")),
+                 
+                 # horizontal line
+                 tags$hr(),
+                 
                  
                  conditionalPanel("input.sel_reference == 'Custom'",
                                   uiOutput("ui_sel_ref")),
