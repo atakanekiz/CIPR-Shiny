@@ -4,10 +4,10 @@ username:
 account: aekiz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 1053041
-bundleId: 2594569
+appId: 1626094
+bundleId: 2703877
 url: https://aekiz.shinyapps.io/CIPR/
-when: 1573955334.91324
+when: 1578035162.12323
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: README.md|sample_data/input_for_correlation.csv|sample_data/input_for_logfc.csv|sample_data/ref_immgen_annot_trimmed.csv|sample_data/ref_immgen_data_trimmed.csv
+ignoredFiles: .gitattributes|README.md|test.rmd|ref_prep/.Rhistory|ref_prep/cipr_ref_prep.rmd|benchmarking

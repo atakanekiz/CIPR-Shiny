@@ -208,7 +208,7 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                    tags$li("Human microarray data from sorted hematopoietic cells reported in", a('Novershtern et al. (2011).', href='https://doi.org/10.1016/j.cell.2011.01.004'), "This dataset contains data from 211 samples and 17 main cell types (38 subtypes)" ),
                    tags$li("Human RNAseq data from sorted cells reported in", a('Monaco et al. (2019).', href='https://doi.org/10.1016/j.celrep.2019.01.041'), "This dataset contains 114 samples originating from 11 main cell types (29 subtypes)."),
                  ),
-                 p("We would like to acknowledge", a('SingleR', href='https://doi.org/10.1038/s41590-018-0276-y'), "R package authored by Dvir Aran, Agnieszka P. Looney, Leqian Liu (Bhattacharya Lab, UCSF), which was tremendously helpful for preparing reference datasets. The code for preparing the CIPR-ready reference datasets can be found in the", a('CIPR GitHub Page.', href='https://github.com/atakanekiz/CIPR')),
+                 p("We would like to acknowledge", a('SingleR', href='https://doi.org/10.1038/s41590-018-0276-y'), "R package authored by Dvir Aran, Agnieszka P. Looney, Leqian Liu (Bhattacharya Lab, UCSF), which was tremendously helpful for preparing reference datasets. The code for preparing the CIPR-ready reference datasets can be found in the", a('CIPR GitHub Page.', href='https://github.com/atakanekiz/CIPR-Shiny')),
                  br(),
                  p(strong("If one would like to use a custom reference dataset:")),
                  tags$ul(
