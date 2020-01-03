@@ -405,7 +405,7 @@ server <- function(input, output){
       
       
       # Read main expression dataframe
-      reference <- as.data.frame(readRDS("data/msrnaseq_expr.rds"))
+      reference <- as.data.frame(readRDS("data/mmrnaseq_expr.rds"))
       
       # Name of the gene column in reference data
       ref_gene_column <<- grep("gene", colnames(reference), ignore.case = T, value = T)
@@ -455,7 +455,7 @@ server <- function(input, output){
       
       
       # Read main expression dataframe
-      reference <- as.data.frame(readRDS("data/monaco_expr.rds"))
+      reference <- as.data.frame(readRDS("data/hsrnaseq_expr.rds"))
       
       # Name of the gene column in reference data
       ref_gene_column <<- grep("gene", colnames(reference), ignore.case = T, value = T)
@@ -621,7 +621,7 @@ server <- function(input, output){
       
     } else if(input$sel_reference == "Presorted RNAseq (mouse)"){
       
-      ref_annotation <- readRDS("data/msrnaseq_samples.rds")
+      ref_annotation <- readRDS("data/mmrnaseq_samples.rds")
       ref_annotation
       
     } else if(input$sel_reference == "Blueprint-Encode (human)"){
@@ -646,7 +646,7 @@ server <- function(input, output){
       
     } else if(input$sel_reference == "Presorted RNAseq (human)"){
       
-      ref_annotation <- readRDS("data/monaco_samples.rds")
+      ref_annotation <- readRDS("data/hsrnaseq_samples.rds")
       ref_annotation
       
     } else if(input$sel_reference == "Custom"){

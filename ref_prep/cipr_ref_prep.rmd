@@ -21,11 +21,11 @@ suppressPackageStartupMessages(library(SummarizedExperiment))
 
 dice <- DatabaseImmuneCellExpressionData()
 
-msrnaseq <- MouseRNAseqData()
+mmrnaseq <- MouseRNAseqData()
 
 immgen <- ImmGenData()
 
-monaco <- MonacoImmuneData()
+hsrnaseq <- MonacoImmuneData()
 
 blueprint <- BlueprintEncodeData()
 
@@ -34,14 +34,18 @@ hpca <- HumanPrimaryCellAtlasData()
 hema <- NovershternHematopoieticData()
 
 sumexprs <- list(dice = dice, 
-                 msrnaseq = msrnaseq,
+                 mmrnaseq = mmrnaseq,
                  immgen = immgen,
-                 monaco = monaco, 
+                 hsrnaseq = hsrnaseq, 
                  blueprint = blueprint, 
                  hpca = hpca, 
                  hema = hema)
 
+immgen_expr <- readRDS("../data/immgen.rds")
+immgen_samples <- readRDS("../data/immgen_annot.rds")
 
+save(immgen_expr, file="immgen_expr_ae.rda")
+save(immgen_samples, file="immgen_samples_ae.rda")
 
 ```
 
@@ -54,59 +58,59 @@ sumexprs <- list(dice = dice,
 
 
 exprep <- function(sumexp_list){
-  
-  require(tibble)
-  require(SummarizedExperiment)
-  require(dplyr)
-  
-  
-  exp_dat <- list()
-  sample_dat <- list()
-  
-  
-  for(i in names(sumexp_list)){
     
-    obj <- sumexp_list[[i]]
-    
-    # Prep expression data
-    dat <- as.data.frame(assay(obj))
-    
-    if(i == "dice") colnames(dat) <- make.names(colnames(dat), unique = T)
-    
-    dat_colnames <- colnames(dat)
-    
-    dat <- add_column(dat, Gene=rownames(dat), .after = 0)
-    
-    exp_dat[[i]] <- dat
-    
-    # Prep sample data
-    smpl <- as.data.frame(colData(obj))
-    
-    smpl <- smpl %>%
-      add_column(short_name = rownames(smpl), .after = 0) %>%
-      rename(reference_cell_type = label.main,
-             long_name = label.fine) %>%
-      mutate(description = "N/A")
+    require(tibble)
+    require(SummarizedExperiment)
+    require(dplyr)
     
     
-    
-    sample_names <- smpl$short_name
-    
-    smpl$reference_cell_type <- factor(smpl$reference_cell_type)
-    
-    sample_dat[[i]] <- smpl
+    exp_dat <- list()
+    sample_dat <- list()
     
     
+    for(i in names(sumexp_list)){
+        
+        obj <- sumexp_list[[i]]
+        
+        # Prep expression data
+        dat <- as.data.frame(assay(obj))
+        
+        if(i == "dice") colnames(dat) <- make.names(colnames(dat), unique = T)
+        
+        dat_colnames <- colnames(dat)
+        
+        dat <- add_column(dat, Gene=rownames(dat), .after = 0)
+        
+        exp_dat[[i]] <- dat
+        
+        # Prep sample data
+        smpl <- as.data.frame(colData(obj))
+        
+        smpl <- smpl %>%
+            add_column(short_name = rownames(smpl), .after = 0) %>%
+            rename(reference_cell_type = label.main,
+                   long_name = label.fine) %>%
+            mutate(description = "N/A")
+        
+        
+        
+        sample_names <- smpl$short_name
+        
+        smpl$reference_cell_type <- factor(smpl$reference_cell_type)
+        
+        sample_dat[[i]] <- smpl
+        
+        
+        
+        if(sum(dat_colnames != sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched.")
+        
+        
+    }
     
-    if(sum(dat_colnames != sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched.")
     
+    sample_dat <<- sample_dat
+    exp_dat <<- exp_dat
     
-  }
-  
-  
-  sample_dat <<- sample_dat
-  exp_dat <<- exp_dat
-  
 }
 
 
@@ -121,14 +125,14 @@ exprep <- function(sumexp_list){
 exprep(sumexp_list = sumexprs)
 
 savefun <- function(datlist, savename){
-  
-  for(i in names(datlist)){
     
-    saveRDS(datlist[[i]], file = paste0(i, "_", savename, ".rds"))
+    for(i in names(datlist)){
+        
+        saveRDS(datlist[[i]], file = paste0(i, "_", savename, ".rds"))
+        
+        
+    }
     
-    
-  }
-  
 }
 
 
@@ -137,13 +141,45 @@ savefun(sample_dat, savename = "samples")
 
 ```
 
+## Prepare data as Rda files
+
+Needed for CIPR package
+
+```{r}
+
+
+exprep(sumexp_list = sumexprs)
+
+saverda <- function(datlist, savename){
+    
+    for(i in names(datlist)){
+        
+        assign(paste0(i, "_", savename), datlist[[i]])
+        
+        
+        save(list = paste0(i, "_", savename),
+             file = paste0(i, "_", savename, ".Rda"))
+        
+        
+    }
+    
+}
+
+
+saverda(exp_dat, savename = "expr")
+saverda(sample_dat, savename = "samples")
+
+## test 
+# load("hema_samples.rda")
+
+```
 
 
 ## Export as csv
 
 For external testing of CIPR
 
-```{r}
+```{r, eval=F}
 
 write.csv(exp_dat$blueprint, file = "blueprint_exprs.csv", row.names = F)
 write.csv(sample_dat$blueprint, file="blueprint_sample.csv", row.names = F)
@@ -159,17 +195,17 @@ write.csv(sample_dat$hpca, file="hpca_sample.csv", row.names = F)
 ```{r}
 
 helper <- function(datlist){
-  
-  for(i in names(datlist)){
     
-    
-    message(i)
-    
-    print(
-      levels(datlist[[i]]$reference_cell_type)
-    )
-    
-  }
+    for(i in names(datlist)){
+        
+        
+        message(i)
+        
+        print(
+            levels(datlist[[i]]$reference_cell_type)
+        )
+        
+    }
     
 }
 
