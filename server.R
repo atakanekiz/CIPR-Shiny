@@ -125,8 +125,8 @@ server <- function(input, output){
       
       pickerInput("cell_subsets", "Select reference cell subsets to analyze",
                   multiple = T,
-                  choices = c("B cells", "Monocytes", "NK cells",  "T cells, CD4+",  "T cells, CD8+"),
-                  selected = c("B cells", "Monocytes", "NK cells",  "T cells, CD4+",  "T cells, CD8+"),
+                  choices = c("CD4+ T cell", "CD8+ T cell", "NK cell", "B cell", "Monocyte"),
+                  selected = c("CD4+ T cell", "CD8+ T cell", "NK cell", "B cell", "Monocyte"),
                   options = list(`actions-box` = TRUE))
       
       
@@ -1035,9 +1035,30 @@ server <- function(input, output){
   
   # Insert the right number of plot output objects into the web page (https://gist.github.com/wch/5436415/)
   output$plots <- renderUI({
+    
+    if(input$sel_reference == "ImmGen (mouse)") plot_width <- 2000
+    if(input$sel_reference == "Presorted RNAseq (mouse)") plot_width <- 2300
+    if(input$sel_reference == "Blueprint-Encode (human)") plot_width <- 2000
+    if(input$sel_reference == "Primary Cell Atlas (human)") plot_width <- 4500
+    if(input$sel_reference == "DICE (human)") plot_width <- 600
+    if(input$sel_reference == "Hematopoietic diff (human)") plot_width <- 1500
+    if(input$sel_reference == "Presorted RNAseq (human)") plot_width <- 1250
+    if(input$sel_reference == "custom") plot_width <- 2000
+    
+    
+    if(input$sel_reference == "ImmGen (mouse)") plot_height <- 500
+    if(input$sel_reference == "Presorted RNAseq (mouse)") plot_height <- 500
+    if(input$sel_reference == "Blueprint-Encode (human)") plot_height <- 550
+    if(input$sel_reference == "Primary Cell Atlas (human)") plot_height <- 500
+    if(input$sel_reference == "DICE (human)") plot_height <- 500
+    if(input$sel_reference == "Hematopoietic diff (human)") plot_height <- 500
+    if(input$sel_reference == "Presorted RNAseq (human)") plot_height <- 500
+    if(input$sel_reference == "custom") plot_height <- 500
+  
+    
     plot_output_list <- lapply(clusters(), function(i) {
       plotname <- paste("plot", i, sep="")
-      plotOutput(plotname, height = 500, width = 1800, brush = "brush") # optimize plotting area
+      plotOutput(plotname, height = plot_height, width = plot_width, brush = "brush") # optimize plotting area
     }
     ) # close lapply 
     
@@ -1097,7 +1118,7 @@ server <- function(input, output){
                            font.y = c(14, "bold", "black"), size=1, x.text.angle=90,
                            title = paste("Cluster:",my_i), font.title = c(15, "bold.italic"),
                            font.legend = c(15, "plain", "black"))+
-              theme(axis.text.x = element_text(size=10, vjust=0.5, hjust=1))+
+              theme(axis.text.x = element_text(size=7.5, vjust=0.5, hjust=1))+
               geom_hline(yintercept=score_mean)+
               annotate("rect", xmin = 1, xmax = length(df_plot$reference_id),
                        ymin = score_mean-score_sd, ymax = score_mean+score_sd,
