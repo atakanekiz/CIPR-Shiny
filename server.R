@@ -1,4 +1,3 @@
-
 server <- function(input, output){
   
   library(tibble)
@@ -6,8 +5,6 @@ server <- function(input, output){
   library(ggpubr)
   library(gtools)
   library(shinyWidgets)
-  
-  
   
   
   values <- reactiveValues()

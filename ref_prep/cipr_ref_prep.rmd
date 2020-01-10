@@ -19,7 +19,7 @@ suppressPackageStartupMessages(library(SummarizedExperiment))
 
 
 
-dice <- DatabaseImmuneCellExpressionData()
+# dice <- DatabaseImmuneCellExpressionData()
 
 mmrnaseq <- MouseRNAseqData()
 
@@ -135,7 +135,7 @@ savefun(sample_dat, savename = "samples")
 
 ```
 
-## Prepare data as Rda files
+## Prepare data as rda files
 
 Needed for CIPR package
 
@@ -152,7 +152,7 @@ saverda <- function(datlist, savename){
         
         
         save(list = paste0(i, "_", savename),
-             file = paste0(i, "_", savename, ".Rda"))
+             file = paste0(i, "_", savename, ".rda"))
         
         
     }
@@ -207,7 +207,7 @@ helper(sample_dat)
 suppressPackageStartupMessages(library(dplyr))
 
 
-dice_expr <- read.csv("mean_tpm_merged.csv")
+dice_expr <- read.csv("mean_tpm_merged.csv", stringsAsFactors = F)
 
 dice_expr[, colnames(dice_expr) != "gene"] <- log(dice_expr[, colnames(dice_expr) != "gene"]+1, base = 2)
 
@@ -227,9 +227,9 @@ g_list <- getBM(filters= "ensembl_gene_id",
 dice_expr <- left_join(dice_expr, g_list, by=c("gene"="ensembl_gene_id"))
 
 dice_expr <- dice_expr %>%
-  select(-gene) %>%
-  select(hgnc_symbol, everything()) %>%
-  rename(gene = hgnc_symbol) %>%
+  dplyr::select(-gene) %>%
+  dplyr::select(hgnc_symbol, everything()) %>%
+  dplyr::rename(gene = hgnc_symbol) %>%
   filter(!is.na(gene))
 
 nonzero_genes <- which(rowSums(dice_expr[, 2:dim(dice_expr)[2]])!= 0)
@@ -250,6 +250,9 @@ dice_samples <- data.frame(short_name = colnames(dice_expr)[colnames(dice_expr)!
                          description = "N/A")
 
 
+dice_samples$short_name <- as.character(dice_samples$short_name)
+dice_samples$long_name <- as.character(dice_samples$long_name)
+dice_samples$description <- as.character(dice_samples$description)
 
 save(dice_expr, file="dice_expr.rda")
 save(dice_samples, file="dice_samples.rda")
@@ -470,10 +473,10 @@ feat_metadata$ID <- as.character(feat_metadata$ID)
 
 
 
-# Analyze RAW data from CEL files
+## Analyze RAW data from CEL files
 
 
-## Download CEL files
+### Download CEL files
 
 ```{r, eval=F}
 
@@ -486,7 +489,7 @@ getGEOSuppFiles("GSE37448", baseDir = "CEL_files/")
 
 
 
-## Create RMA-normalized data object (instead of this, do prefiltering)
+### Create RMA-normalized data object (instead of this, do prefiltering)
 
 
 ```{r, eval=F}
@@ -499,9 +502,9 @@ saveRDS(eset, "eset.rds")
 
 ```
 
-## Prepare gene expression dataset
+### Prepare gene expression dataset
 
-### Average probes targeting the same gene
+#### Average probes targeting the same gene
 
 ```{r, eval=F}
 
@@ -550,7 +553,7 @@ setcolorder(dat_crunch, c("gene_symbol",colnames(dat_crunch)[!(colnames(dat_crun
 
 ```
 
-### Average biological replicates
+#### Average biological replicates
 
 ```{r, eval=F}
 
@@ -594,7 +597,7 @@ saveRDS(immgen, "immgen.rds")
 ```
 
 
-### Plot overall gene expression
+#### Plot overall gene expression
 
 ```{r, fig.width=16, fig.height=4}
 
@@ -605,7 +608,7 @@ boxplot(immgen[,colnames(immgen) != "GeneName"])
 ```
 
 
-### Ensure the gene expression profiles are retained as expected
+#### Ensure the gene expression profiles are retained as expected
 
 ```{r, fig.height=5, fig.width=8}
 
@@ -692,9 +695,57 @@ immgen_annot$long_name <- gsub("ï", "i", immgen_annot$long_name)
 saveRDS(immgen_annot, "immgen_annot.rds")
 ###################################################################
 
+
+ann <- readRDS("immgen_annot.rds")
+
+ann$short_name <- as.character(ann$short_name)
+ann$description <- as.character(ann$description)
+
+saveRDS(ann, "immgen_annot.rds")
+
+immgen_samples <- ann
+
+save(immgen_samples, file="immgen_samples.rda")
+
+
 ```
 
 
+## Reorder samples
+
+```{r}
+
+# immgen <- readRDS("immgen.rds")
+# immgen_annot <- readRDS("immgen_annot.rds")
+
+# saveRDS(immgen, "immgen_original.rds")
+# saveRDS(immgen_annot, "immgen_annot_original.rds")
+
+# immgen <- readRDS("immgen_original.rds")
+# immgen_annot <- readRDS("immgen_annot_original.rds")
+
+sum(colnames(immgen[, 2:dim(immgen)[2]]) != immgen_annot$short_name)
+
+reorder_vector <- order(as.character(immgen_annot$reference_cell_type))
+
+immgen_annot <- immgen_annot[reorder_vector, ]
+
+immgen <- dplyr::select(immgen, GeneName, colnames(immgen)[reorder_vector+1])
+
+
+sum(colnames(immgen[, 2:dim(immgen)[2]]) != immgen_annot$short_name)
+
+
+saveRDS(immgen, "immgen.rds")
+saveRDS(immgen_annot, "immgen_annot.rds")
+
+immgen_samples <- immgen_annot
+immgen_expr <- immgen
+
+save(immgen_expr, file="immgen_expr.rda")
+save(immgen_samples, file="immgen_samples.rda")
+
+```
 
 
 
