@@ -33,7 +33,7 @@ hpca <- HumanPrimaryCellAtlasData()
 
 hema <- NovershternHematopoieticData()
 
-sumexprs <- list(dice = dice, 
+sumexprs <- list(# dice = dice,
                  mmrnaseq = mmrnaseq,
                  # immgen = immgen,
                  hsrnaseq = hsrnaseq, 
@@ -75,7 +75,7 @@ exprep <- function(sumexp_list){
         
         dat <- add_column(dat, Gene=rownames(dat), .after = 0)
         
-        exp_dat[[i]] <- dat
+        # exp_dat[[i]] <- dat
         
         # Prep sample data
         smpl <- as.data.frame(colData(obj))
@@ -92,12 +92,33 @@ exprep <- function(sumexp_list){
         
         smpl$reference_cell_type <- factor(smpl$reference_cell_type)
         
+        # sample_dat[[i]] <- smpl
+        
+        
+        
+        if(sum(dat_colnames != sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched (before reordering).")
+        
+        message("reordering samples")
+        
+        
+        reorder_vector <- order(as.character(smpl$reference_cell_type))
+        
+        
+        
+        smpl <- smpl[reorder_vector, ]
+        
         sample_dat[[i]] <- smpl
         
         
+        dat <- dplyr::select(dat, Gene, colnames(dat)[reorder_vector+1])
         
-        if(sum(dat_colnames != sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched.")
+        exp_dat[[i]] <- dat
         
+        
+        new_dat_colnames <- colnames(dat)[2:dim(dat)[2]]
+        new_sample_names <- smpl$short_name
+        
+        if(sum(new_dat_colnames != new_sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched (after reordering).")
         
     }
     
