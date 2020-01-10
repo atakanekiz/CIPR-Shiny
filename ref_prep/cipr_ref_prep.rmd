@@ -275,6 +275,16 @@ dice_samples$short_name <- as.character(dice_samples$short_name)
 dice_samples$long_name <- as.character(dice_samples$long_name)
 dice_samples$description <- as.character(dice_samples$description)
 
+sum(colnames(dice_expr)[2:dim(dice_expr)[2]] != dice_samples$short_name)
+
+reorder_vector <- order(as.character(dice_samples$reference_cell_type))
+
+dice_samples <- dice_samples[reorder_vector, ]
+
+dice_expr <- dplyr::select(dice_expr, gene, colnames(dice_expr)[reorder_vector+1])
+
+sum(colnames(dice_expr)[2:dim(dice_expr)[2]] != dice_samples$short_name)
+
 save(dice_expr, file="dice_expr.rda")
 save(dice_samples, file="dice_samples.rda")
 
