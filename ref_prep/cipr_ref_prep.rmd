@@ -128,16 +128,98 @@ exprep <- function(sumexp_list){
     
 }
 
+exprep(sumexprs)
 
 
 ```
 
+# Prepare reference metadata
 
-## Prepare data
+## Reference cell type breakdown
 
 ```{r}
 
-exprep(sumexp_list = sumexprs)
+helper <- function(datlist){
+    
+    for(i in names(datlist)){
+        
+        
+        message(i)
+        
+        print(
+            levels(datlist[[i]]$reference_cell_type)
+        )
+        
+    }
+    
+}
+
+
+helper(sample_dat)
+
+
+
+
+
+```
+
+## Standardize reference cell type annotations
+
+```{r}
+
+trimmer <- function(df){
+  
+  df$reference_cell_type <- gsub("cells", "cell", df$reference_cell_type)
+  df$reference_cell_type <- gsub("phils", "phil", df$reference_cell_type)
+  df$reference_cell_type <- gsub("cytes", "cyte", df$reference_cell_type)
+  df$reference_cell_type <- gsub("blasts", "blast", df$reference_cell_type)
+  df$reference_cell_type <- gsub("phages", "phage", df$reference_cell_type)
+  df$reference_cell_type <- gsub("CMPs", "CMP", df$reference_cell_type)
+  df$reference_cell_type <- gsub("GMPs", "GMP", df$reference_cell_type)
+  df$reference_cell_type <- gsub("MEPs", "MEP", df$reference_cell_type)
+  df$reference_cell_type <- gsub("HSCs", "HSC", df$reference_cell_type)
+  df$reference_cell_type <- gsub("Platelets", "Platelet", df$reference_cell_type)
+  df$reference_cell_type <- gsub("_", " ", df$reference_cell_type)
+  df$reference_cell_type <- gsub("B\\-cell", "B cell", df$reference_cell_type)
+  df$reference_cell_type <- gsub("T\\-cell", "T cell", df$reference_cell_type)
+  df$reference_cell_type <- gsub("BM & Prog\\.", "BM", df$reference_cell_type)
+  df$reference_cell_type <- gsub("HSC.*", "HSC", df$reference_cell_type)
+  df$reference_cell_type <- gsub("CD34.*", "", df$reference_cell_type)
+  
+  df$reference_cell_type <- factor(df$reference_cell_type)
+  
+  df$reference_cell_type <- factor(df$reference_cell_type, 
+                                   levels = gtools::mixedsort(levels(df$reference_cell_type)))
+  
+  df
+  
+}
+
+sample_dat$hsrnaseq$reference_cell_type <-gsub("^T cells$", "MAIT-gdT", sample_dat$hsrnaseq$reference_cell_type)
+
+sample_dat <- lapply(sample_dat, trimmer)
+
+
+
+
+```
+
+Check renaming
+
+```{r}
+
+helper(sample_dat)
+
+```
+
+
+
+
+# Save data as rds files
+
+```{r}
+
+
 
 savefun <- function(datlist, savename){
     
@@ -156,14 +238,12 @@ savefun(sample_dat, savename = "samples")
 
 ```
 
-## Prepare data as rda files
+# Save data as rda files
 
 Needed for CIPR package
 
 ```{r}
 
-
-exprep(sumexp_list = sumexprs)
 
 saverda <- function(datlist, savename){
     
@@ -190,32 +270,7 @@ saverda(sample_dat, savename = "samples")
 ```
 
 
-# Reference cell type breakdown
 
-```{r}
-
-helper <- function(datlist){
-    
-    for(i in names(datlist)){
-        
-        
-        message(i)
-        
-        print(
-            levels(datlist[[i]]$reference_cell_type)
-        )
-        
-    }
-    
-}
-
-
-helper(sample_dat)
-
-
-
-
-```
 
 
 # Manually prepare DICE data
