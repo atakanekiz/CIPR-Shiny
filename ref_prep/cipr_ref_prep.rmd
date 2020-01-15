@@ -173,6 +173,7 @@ trimmer <- function(df){
   df$reference_cell_type <- gsub("phils", "phil", df$reference_cell_type)
   df$reference_cell_type <- gsub("cytes", "cyte", df$reference_cell_type)
   df$reference_cell_type <- gsub("blasts", "blast", df$reference_cell_type)
+  df$reference_cell_type <- gsub("genitors", "genitor", df$reference_cell_type)
   df$reference_cell_type <- gsub("phages", "phage", df$reference_cell_type)
   df$reference_cell_type <- gsub("CMPs", "CMP", df$reference_cell_type)
   df$reference_cell_type <- gsub("GMPs", "GMP", df$reference_cell_type)
@@ -184,7 +185,7 @@ trimmer <- function(df){
   df$reference_cell_type <- gsub("T\\-cell", "T cell", df$reference_cell_type)
   df$reference_cell_type <- gsub("BM & Prog\\.", "BM", df$reference_cell_type)
   df$reference_cell_type <- gsub("HSC.*", "HSC", df$reference_cell_type)
-  df$reference_cell_type <- gsub("CD34.*", "", df$reference_cell_type)
+  df$reference_cell_type <- gsub(" CD34.*", "", df$reference_cell_type)
   
   df$reference_cell_type <- factor(df$reference_cell_type)
   

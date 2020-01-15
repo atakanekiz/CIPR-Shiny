@@ -5,9 +5,9 @@ account: aekiz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1626094
-bundleId: 2722964
+bundleId: 2729815
 url: https://aekiz.shinyapps.io/CIPR/
-when: 1578817172.80015
+when: 1579072262.81439
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .gitattributes|README.md|ref_prep/cipr_ref_prep.rmd|ref_prep/mean_tpm_merged.csv|benchmarking
+ignoredFiles: .gitattributes|README.md|ref_prep/.Rhistory|ref_prep/cipr_ref_prep.rmd|ref_prep/mean_tpm_merged.csv|benchmarking
