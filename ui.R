@@ -154,15 +154,15 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
         tabPanel("How to use this program",
                  
                  h3("Summary"),
-                 p("Understanding the biological identity of cell clusters in single cell RNA sequencing (SCseq) experiments can be challenging due to overlapping gene expression profiles. An accurate assessment of the cluster identity requires analyzing multiple genes simultaneously as opposed to examining a few selected lineage-specific markers. Cluster Identity PRedictor (CIPR) compares user-provided SCseq cluster gene signatures with known reference datasets --or with a custom reference--, and calculates an", strong('identity score (IS)'), "for each SCseq cluster per reference cell subset. For further information about how to use CIPR, please read the sections below."),
+                 p("Understanding the biological identity of cell clusters in single cell RNA sequencing (scRNAseq) experiments can be challenging due to overlapping gene expression profiles. An accurate assessment of the cluster identity requires analyzing multiple genes simultaneously as opposed to examining a few selected lineage-specific markers. Cluster Identity PRedictor (CIPR) compares user-provided scRNAseq cluster gene signatures with known reference datasets --or with a custom reference--, and calculates an", strong('identity score (IS)'), "for each scRNAseq cluster per reference cell subset. For further information about how to use CIPR, please read the sections below."),
                  
                  br(),br(),
                  
                  h3("Quick Start"),
                  
-                 p(strong(span(style="color:green", "To compare your SCseq clusters against ImmGen cell types, simply upload the cluster gene expression signatures and click 'Analyze'"))),
+                 p(strong(span(style="color:green", "To compare your scRNAseq clusters against ImmGen cell types, simply upload the cluster gene expression signatures and click 'Analyze'"))),
                  br(),
-                 p(strong(span(style="color:steelblue", "If you would like to compare SCseq data with a custom reference, please select the appropriate radio button and upload reference gene expression data"))),
+                 p(strong(span(style="color:steelblue", "If you would like to compare scRNAseq data with a custom reference, please select the appropriate radio button and upload reference gene expression data"))),
                  br(),
                  p(span(style="color:black", "You can also run the program by using example data that our lab has generated", a('(Ekiz HA and Huffaker TB, JCI Insight, 2019).', href='https://insight.jci.org/articles/view/126543'), "This data was obtained by single cell transcriptomics analysis (10X Genomics) of CD45+ flow-sorted murine tumor-infiltrating immune cells. Example gene expression data on this website is shortened to reduce computing times. In this example dataset, gene signatures of 4 clusters (activated T cells, natural killer cells, Langerhans dendritic cells, and plasmacytoid dendritic cells) are included, whereas the original dataset had 15 distinct cell clusters based on our analysis.")),
                  
@@ -170,12 +170,12 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  
                  
                  h3("Input data"),
-                 p("CIPR accepts gene expression data derived from SCseq experiments in comma separated value (.csv) format. Depending on the calculation method to be used, data need to be formatted as described below. Popular SCseq analysis software including Loupe Cell Browser (10X Genomics) and Seurat (Satija Lab, NY) can be used to export suitable data frames for logFC comparison methods"), 
+                 p("CIPR accepts gene expression data derived from scRNAseq experiments in comma separated value (.csv) format. Depending on the calculation method to be used, data need to be formatted as described below. Popular scRNAseq analysis software including Loupe Cell Browser (10X Genomics) and Seurat (Satija Lab, NY) can be used to export suitable data frames for logFC comparison methods"), 
                  strong("For correlation methods using the entire gene set"),
                  tags$ul(
                    tags$li("The input data frame should contain the average gene expression values per cluster for each gene in the experiment."),
                    tags$li("This data frame must have a column named 'gene', and other columns should have the average expression values in individual clusters."),
-                   tags$li("If SCseq data is being analyzed with Seurat package,", strong("AverageExpression"), "function can be used to generate a CIPR-ready data frame. Please see below the example code snippet to obtain a suitable input data using this method.")
+                   tags$li("If scRNAseq data is being analyzed with Seurat package,", strong("AverageExpression"), "function can be used to generate a CIPR-ready data frame. Please see below the example code snippet to obtain a suitable input data using this method.")
                    
                  ),
                  
@@ -266,7 +266,7 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
           tags$li("Correlation methods calculate correlation coefficients between logFC values for each unknown cluster-reference cell subset pairs and reports these as identity scores."),
           tags$li("If logFC dot product method is selected, for each shared gene, logFC values of differentially expressed genes from unknown clusters are multiplied with the logFC values in the reference subsets. This way if a gene is upregulated or downregulated in both the unknown cluster and the reference cell type (i.e. positive correlation), the multiplication will result in a positive number (i.e. multiplication of two positive or two negative numbers). Alternatively, if a gene is differentially regulated in opposite directions in the unknown cluster and reference cell type (i.e. negative correlation), multiplication of logFC values will result in a negative number."),
           tags$li("Multiplied logFC values per each gene are added up, resulting in an aggregate identity score for each cluster in the experimental data. This way, genes that have similar expression patterns in the experimental cell cluster and the reference cell contribute to a higher identity score, whereas genes with opposite expression patterns will result in a lower identity score"),
-          tags$li(strong("This way, each cluster in the SCseq experiment is analyzed against each known cell type in the reference file and scored for its overall similarity using a dot product approach. A higher identity score indicates the unknown cluster has a similar gene expression profile to a given reference dataset, and suggest shared biological origins.")),
+          tags$li(strong("This way, each cluster in the scRNAseq experiment is analyzed against each known cell type in the reference file and scored for its overall similarity using a dot product approach. A higher identity score indicates the unknown cluster has a similar gene expression profile to a given reference dataset, and suggest shared biological origins.")),
           tags$li("For each cell cluster in the experiment, aggregate identity score of reference cell types are plotted in dot plots which shows reference cell types on the x-axis, and aggregate identity score on the y-axis."),
           tags$li("Reference cell types with the 5 highest identity scores are also plotted for easy visualization.")
         ),
@@ -285,7 +285,7 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
         
         br(), br(),
         
-        p("Although different calculation methods implemented in CIPR generated comparable results while analyzing heterogeneous immune cell populations from tumors (Ekiz HA and Huffaker TB, JCI Insight, 2019), some methods may perform better than others depending on the experimental context. Importantly, since trancript-level correlations may not be sufficient to fully define the cellular pheonotypes, further bench work may be needed to validate the findings from SCseq experiments."),
+        p("Although different calculation methods implemented in CIPR generated comparable results while analyzing heterogeneous immune cell populations from tumors (Ekiz HA and Huffaker TB, JCI Insight, 2019), some methods may perform better than others depending on the experimental context. Importantly, since trancript-level correlations may not be sufficient to fully define the cellular pheonotypes, further bench work may be needed to validate the findings from scRNAseq experiments."),
         
         
         
@@ -392,7 +392,7 @@ write.csv(cluster_markers, 'clustermarkers.csv', row.names=F)
         
         h3("Contact us"),
         p("For questions and comments:"),
-        p("atakan.ekiz@path.utah.edu"),
+        p("atakan.ekiz-at-path-utah-edu"),
         p("Ryan O'Connell Lab"),
         p("Department of Pathology"),
         p("University of Utah"),
