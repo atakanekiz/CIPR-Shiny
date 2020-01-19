@@ -69,6 +69,8 @@ To be adaptable to various experimental contexts, CIPR enables users to:
 
 * Limit the analysis to the reference genes expression variance above a certain quantile determined by the user.
 
+---
+
 ## Sample outputs
 
 ### Results per cluster
