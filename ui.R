@@ -1,20 +1,10 @@
-library(shinythemes)
-
-ui <- fluidPage(theme=shinytheme("spacelab"),
+ui <- fluidPage(
   
   shinyjs::useShinyjs(), # needed for download button to work
   
   tags$head(includeHTML(("data/google_analytics.html"))), # To track user experience
   
-  tags$head(
-    tags$style(HTML("
-      .shiny-output-error-validation {
-        color: steelblue;
-      }
-    "))
-  ),
-  
-  titlePanel(title=div(img(src="cipr_logo_small.png"), "Cluster Identity Predictor"), windowTitle = "CIPR"),
+  titlePanel(title=div(img(src="cipr_logo_small.png"), "Cluster identity predictor"), windowTitle = "CIPR"),
   
   sidebarLayout(
     
@@ -39,25 +29,8 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  
                  radioButtons("sel_reference", 
                               label = "Select reference data", 
-                              choices = c("ImmGen (mouse)",
-                                          "Presorted RNAseq (mouse)",
-                                          "Blueprint-Encode (human)",
-                                          "Primary Cell Atlas (human)",
-                                          "DICE (human)",
-                                          "Hematopoietic diff (human)",
-                                          "Presorted RNAseq (human)",
-                                          "Custom"), 
-                              selected = "ImmGen (mouse)"), 
-                 
-                 # horizontal line
-                 tags$hr(), 
-                 
-                 # Setup cell reference cell subset selector
-                 conditionalPanel("input.sel_reference != 'Custom'",
-                                  uiOutput("ui_sel_subsets")),
-                 
-                 # horizontal line
-                 tags$hr(),
+                              choices = c("ImmGen", "Custom"), 
+                              selected = "ImmGen"), 
                  
                  
                  conditionalPanel("input.sel_reference == 'Custom'",
@@ -68,18 +41,18 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  # horizontal line
                  tags$hr(), 
                  
-                 sliderInput("var_filter", "Keep top Nth % of variable genes in reference",
-                             min = 0, max = 100,
-                             value = 100),
-                 
-                 # horizontal line
-                 tags$hr(), 
-                 
                  radioButtons("comp_method", 
                               label = "Select method for comparisons", 
                               choices = c("logFC dot product", "logFC Spearman", "logFC Pearson",
                                           "Spearman (all genes)", "Pearson (all genes)"), 
                               selected = "logFC dot product"), 
+                 
+                 # horizontal line
+                 tags$hr(), 
+                 
+                 sliderInput("var_filter", "Keep top Nth % of variable genes in reference",
+                             min = 0, max = 100,
+                             value = 100),
                  
                  # horizontal line
                  tags$hr(), 
@@ -104,8 +77,8 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
     ),
     
     
-      
-    mainPanel(width=10,
+    
+    mainPanel(
       
       
       
@@ -115,8 +88,7 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  
                  fluidRow(
                    plotOutput("top5", brush = "brushtop5", height="600px"),
-                   div(tableOutput("brushtop5"), style = "font-size:85%"),
-                   br(),
+                   tableOutput("brushtop5"),
                    p(strong("\n\nDefinition of table columns")),
                    tags$ul(
                      tags$li(strong("Cluster:"), "The name of the unknown cluster"),
@@ -146,15 +118,12 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  )       
         ),
         
-        tabPanel("Analysis details",
-                 
-                 verbatimTextOutput(outputId="console", placeholder = T)
-                 ),
+        
         
         tabPanel("How to use this program",
                  
                  h3("Summary"),
-                 p("Understanding the biological identity of cell clusters in single cell RNA sequencing (SCseq) experiments can be challenging due to overlapping gene expression profiles. An accurate assessment of the cluster identity requires analyzing multiple genes simultaneously as opposed to examining a few selected lineage-specific markers. Cluster Identity PRedictor (CIPR) compares user-provided SCseq cluster gene signatures with known reference datasets --or with a custom reference--, and calculates an", strong('identity score (IS)'), "for each SCseq cluster per reference cell subset. For further information about how to use CIPR, please read the sections below."),
+                 p("Understanding the biological identity of cell clusters in single cell RNA sequencing (SCseq) experiments can be challenging due to overlapping gene expression profiles. An accurate assessment of the cluster identity requires analyzing multiple genes simultaneously as opposed to examining a few selected lineage-specific markers. Cluster Identity PRedictor (CIPR) compares user-provided SCseq cluster gene signatures with", a('Immunological Genome Project (ImmGen)', href= 'https://www.immgen.org'), "mouse immune cell datasets -- or with a user-provided reference dataset --, and calculates an", strong('identity score (IS)'), "for each SCseq cluster per reference cell subset. To calculate the IS, CIPR compares differential gene expression signatures of unknown clusters to that of known reference samples using three different methods: 1) Log fold-change comparison (dot product), 2) Spearman's correlation, and 3) Pearsons's correlation. For further information and frequently asked questions, please read the sections below."),
                  
                  br(),br(),
                  
@@ -162,9 +131,9 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  
                  p(strong(span(style="color:green", "To compare your SCseq clusters against ImmGen cell types, simply upload the cluster gene expression signatures and click 'Analyze'"))),
                  br(),
-                 p(strong(span(style="color:steelblue", "If you would like to compare SCseq data with a custom reference, please select the appropriate radio button and upload reference gene expression data"))),
+                 p(strong(span(style="color:blue", "If you would like to compare SCseq data with a custom reference, please select the appropriate radio button and upload reference gene expression data"))),
                  br(),
-                 p(span(style="color:black", "You can also run the program by using example data that our lab has generated", a('(Ekiz HA and Huffaker TB, JCI Insight, 2019).', href='https://insight.jci.org/articles/view/126543'), "This data was obtained by single cell transcriptomics analysis (10X Genomics) of CD45+ flow-sorted murine tumor-infiltrating immune cells. Example gene expression data on this website is shortened to reduce computing times. In this example dataset, gene signatures of 4 clusters (activated T cells, natural killer cells, Langerhans dendritic cells, and plasmacytoid dendritic cells) are included, whereas the original dataset had 15 distinct cell clusters based on our analysis.")),
+                 p(span(style="color:black", "You can also run the program by using example data that our lab has generated", a('(Ekiz HA and Huffaker TB, JCI Insight, 2019).', href='https://insight.jci.org/articles/view/126543'), "This data were obtained by single cell transcriptomics analysis (10X Genomics) of CD45+ flow-sorted murine tumor-infiltrating immune cells. Example gene expression data on this website is shortened to reduce computing times. In this example dataset, gene signatures of 4 clusters (activated T cells, natural killer cells, Langerhans dendritic cells, and plasmacytoid dendritic cells) are included, whereas the original dataset had 15 distinct cell clusters based on our analysis.")),
                  
                  br(),br(),
                  
@@ -196,41 +165,23 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  imageOutput("sample_data_file_logfc"),
                  
                  
-                 h3("Reference data"),
-                 p("Users can select one of the pre-loaded reference datasets or provide a custom reference data frame."), 
-                 p(strong("The reference datasets available in CIPR include:")),
+                 h3("About reference dataset"),
                  tags$ul(
-                   tags$li(a('Immunological Genome Project (ImmGen)' , href= 'https://www.immgen.org'), "microarray data from sorted mouse immune cells. This dataset is prepared by using both V1 and V2 ImmGen releases and it contains 296 samples from 20 different cell types (253 subtypes)."),
-                   tags$li("Mouse RNAseq data from sorted cells reported in", a('Benayoun et al. (2019).' , href= 'http://www.genome.org/cgi/doi/10.1101/gr.240093.118'), "This dataset contains 358 sorted immune and nonimmune samples from 18 different lineages (28 subtypes)."),
-                   tags$li(a('Blueprint' , href= 'https://doi.org/10.3324/haematol.2013.094243'),"/", a('Encode', href="https://doi.org/10.1038/nature11247"),"RNAseq data that contains 259 sorted human immune and nonimmune samples from 24 different lineages (43 subtypes)."),
-                   tags$li(a('Human Primary Cell Atlas', href='https://doi.org/10.1186/1471-2164-14-632'), "that contains microarray data from 713 sorted immune and nonimmune cells (37 main cell types and 157 subtypes)."),
-                   tags$li(a('DICE (Database for Immune Cell Expression(/eQTLs/Epigenomics)', href='https://doi.org/10.1016/j.cell.2018.10.022'), "that contains 1561 human immune samples from 5 main cell type (15 subtypes)."),
-                   tags$li("Human microarray data from sorted hematopoietic cells reported in", a('Novershtern et al. (2011).', href='https://doi.org/10.1016/j.cell.2011.01.004'), "This dataset contains data from 211 samples and 17 main cell types (38 subtypes)" ),
-                   tags$li("Human RNAseq data from sorted cells reported in", a('Monaco et al. (2019).', href='https://doi.org/10.1016/j.celrep.2019.01.041'), "This dataset contains 114 samples originating from 11 main cell types (29 subtypes)."),
-                 ),
-                 p("We would like to acknowledge", a('SingleR', href='https://doi.org/10.1038/s41590-018-0276-y'), "R package authored by Dvir Aran, Agnieszka P. Looney, Leqian Liu (Bhattacharya Lab, UCSF), which was tremendously helpful for preparing reference datasets. The code for preparing the CIPR-ready reference datasets can be found in the", a('CIPR GitHub Page.', href='https://github.com/atakanekiz/CIPR')),
-                 br(),
-                 p(strong("If one would like to use a custom reference dataset:")),
-                 tags$ul(
-                   tags$li("Any number of highthroughput data types can be used including microarray, RNAseq, and proteomics data, as long as data are normalized together."),
+                   tags$li("This program is pre-loaded with", a('ImmGen' , href= 'https://www.immgen.org'), "microarray data for easily investigating immune cell clusters in SCseq experiments."),
+                   tags$li("If one would like to provide a custom reference dataset, any number of highthroughput data types can be used including microarray, RNAseq, and proteomics data, as long as data in the reference file are normalized together."),
                    tags$li("Reference data should be normalized and log-transformed"),
                    tags$li("Custom reference datasets can be uploaded as a csv file and should contain gene expression data from known cell types."),
                    tags$li("Reference dataset should have genes in rows and cell types in columns."),
                    tags$li("The first column of the reference data frame must have gene names (e.g. Pdcd1, Tnfa) and must be named as", strong("Gene.")),
                    tags$li("This file can contain biological and technical replicates. In this case, the identity score is calculated and plotted for each replicate separately.")
                  ),
-                 p("The user can use the entire reference dataset for comparisons as is, or apply two types of filtering:"),
-                 tags$ul(
-                   tags$li(strong("Subsetting the reference samples:"), "User can select which samples (i.e. columns of the reference data) are to be included in the analysis. Subsetting the reference dataframe should not impact all-genes-correlation methods, but it will change the logFC comparison methods since the relative changes will be calculated within the data subset."),
-                   tags$li(strong("Filtering the genes with low variance:"), "User can limit the analysis to only highly variant genes within the reference dataset. The variance cutoff to exclude the genes can be determined by the using the slider in the input panel."),
-                 ),
-                 p(strong(span(style="color:steelblue", "Subsetting the reference dataset and filtering genes with low variance can reduce noise, but may also decrease the number of genes that contribute to the identity score calculations. The best parameters need to be empirically determined by the user."))),
+                 tags$li("The user can use the entire reference dataset for comparisons, or apply filtering to only include genes with high variance. Filtering genes based on high variance can reduce noise, but may also decrease the number of genes that contribute toward identity score calculation. The best parameters need to be empirically determined by the user."),
         br(),
         p(strong("Sample reference gene expression data")),
         imageOutput("sample_reference_file"),
         
         
-        h3("Custom reference annotation data (optional)"),
+        h3("About (optional) custom reference annotation data"),
         tags$ul(
           tags$li("If a custom reference dataset is used, although not necessary, an annotation file (in csv format) can be uploaded to obtain more informative plots."),
           tags$li("Annotation file must contain the columns named as", strong("'short_name', 'long_name', 'description', and 'reference_cell_type'")),
@@ -247,8 +198,19 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
         
         br(),
         
+        h4(strong("If correlation method is used:")),
         
-        h4(strong("If the logFC comparison method is used:")),
+        tags$ul(
+          tags$li("When using correlation approaches, CIPR algorithm calculates pair-wise correlation coefficients between unknown clusters and each of the reference subsets using either Spearman's or Pearson's methods."),
+          tags$li("The correlation coefficients from pairwise comparisons are reported as identity score per reference cell type for each cluster."),
+          tags$li("For each cell cluster in the experiment, correlation coefficients of reference cell types are plotted in dot plots which shows reference cell types on the x-axis, and correlation coefficients on the y-axis."),
+          tags$li("Reference cell types with the 5 highest identity scores for each unknown cluster is summarized in an interactive dot plot"),
+          tags$li("Although, the effects of the outlier genes will be mitigated by the other genes, cell types with only a few strongly distinguishing genes may be misclassified in this method.")
+        ),
+        
+        br(), br(),
+        
+        h4(strong("If logFC comparison method is used:")),
         
         p("The algorithm works first by calculating gene expression signatures in the reference file, and then comparing the unknown cluster signatures with these reference signatures. Specifically the following processes are performed:"),
         h5(strong("Pre-processing of reference dataset")),
@@ -273,25 +235,13 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
         
         br(),
         
-        h4(strong("If correlation method is used:")),
-        
-        tags$ul(
-          tags$li("When using correlation approaches, CIPR algorithm calculates pair-wise correlation coefficients between unknown clusters and each of the reference subsets using either Spearman's or Pearson's methods."),
-          tags$li("The correlation coefficients from pairwise comparisons are reported as identity score per reference cell type for each cluster."),
-          tags$li("For each cell cluster in the experiment, correlation coefficients of reference cell types are plotted in dot plots which shows reference cell types on the x-axis, and correlation coefficients on the y-axis."),
-          tags$li("Reference cell types with the 5 highest identity scores for each unknown cluster is summarized in an interactive dot plot"),
-          tags$li("Although, the effects of the outlier genes will be mitigated by the other genes, cell types with only a few strongly distinguishing genes may be misclassified in this method.")
-        ),
-        
-        br(), br(),
-        
         p("Although different calculation methods implemented in CIPR generated comparable results while analyzing heterogeneous immune cell populations from tumors (Ekiz HA and Huffaker TB, JCI Insight, 2019), some methods may perform better than others depending on the experimental context. Importantly, since trancript-level correlations may not be sufficient to fully define the cellular pheonotypes, further bench work may be needed to validate the findings from SCseq experiments."),
         
         
         
         
         
-        h3("About the confidence of the predictions"),
+        h3("How confident is the prediction?"),
         p("Since our algorithm compares unknown cluster gene signatures with signatures of reference samples, the confidence in the identity prediction can only be as high as the biological overlap between the experimental sample and the reference datasets. In an ideal scenario where gene expression data are available from all possible cell types under various experimental conditions, we envision that this algorithm can describe the identity of the unknown cell clusters in a highly accurate manner. However, in the absence of such data, CIPR is still useful to characterize unknown cluster identities in single cell transcriptomics experiments by using a multiparametric approach. The predictions of this algorithm need to be experimentally tested to ascertain the biological origins of unknown cell clusters. To help assess the confidence of the predictions, we utilize two different metrics:"),
         tags$ul(
           tags$li(strong("Deviation from mean (Z-score):"), "For each unknown cluster, this metric is calculated by", strong(em("i) ")), "Averaging the identity scores from the whole reference dataset", strong(em("ii) ")), "Subtracting the identity scores of individual reference from this average", strong(em("iii) ")), "Dividing the difference by the standard deviation of the identity score across the whole reference dataset. This way, the deviation from mean is reported in the units of ", em("standard deviation."), "The higher deviation indicates a more pronounced distinction from the rest of the reference cell types, hence a higher confidence in prediction."),
@@ -311,11 +261,11 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
         
         h3("Frequently asked questions"),
         tags$ul(
-          tags$li(strong("Why am I getting 'Served Disconnected' error?"), "This can happen if the software is left idle for some time or when it encounters an error during data processing. Common problems include formatting errors of the input and/or the custom reference data. Please see guidelines above to make sure data are formatted correctly. If the problem persists, please contact us."), 
+          tags$li(strong("Why am I getting 'Served Disconnected' error?"), "This can happen if the software encounters an error during processing data or is left idle for some time. Common problems include formatting errors of the input and/or the custom reference data. Please see guidelines above to make sure data are formatted correctly. If the problem persists, please contact us."), 
           br(),
-          tags$li(strong("Is CIPR limited to analyzing mouse data only?"), "The available reference datasets in CIPR are derived from both mouse and human samples. However, CIPR allows the users to analyze their data using reference datasets from other species. To achieve this, the analytical pipeline converts gene names in the input and reference to lower case letters allowing the matching of orthologous genes across species. Most of the orthologous gene names differ only in capitalization between human and mice (e.g. Pdcd1 vs PDCD1), and lower case conversion is sufficient to compare the majority of genes between the input and the reference data. Therefore, the user can benefit from the CIPR pipelines regardless of the species in the study. However, the user should use caution to derive conclusions while comparing datasets across different species. In the cases where available reference datasets are not suitable for analysis, the user can prepare a custom reference dataset to have a more accurate cellular identity approximation. Any number of high throughput data sets readily accessible from", a('Gene Expression Omnibus', href='https://www.ncbi.nlm.nih.gov/geo/'), "and", a('EBI Expression Atlas', href='https://www.ebi.ac.uk/gxa/home'), "can be used to prepare custom reference datasets."),
+          tags$li(strong("Is CIPR limited to analyzing mouse data only?"), "Pre-loaded ImmGen data in CIPR is derived from sorted mouse immune cells. However, the pipeline converts the gene names in the input and reference to lower case letters enabling the comparison of orthologous genes in human and mouse. Most of the orthologous gene names differ only in capitalization between human and mice (e.g. Pdcd1 vs PDCD1), and this conversion is sufficient to compare the majority of genes found in the datasets. However, the user should use caution to derive conclusions while comparing datasets across different species. Alternatively, the user can prepare a custom reference dataset to have a more accurate cellular identity approximation. Any number of high throughput data sets readily accessible from", a('Gene Expression Omnibus', href='https://www.ncbi.nlm.nih.gov/geo/'), "and", a('EBI Expression Atlas', href='https://www.ebi.ac.uk/gxa/home'), "can be used to prepare custom reference datasets."),
           br(),
-          tags$li(strong("How are reference datasets prepared for CIPR?"), "Please see the", a('CIPR GitHub page', href='https://github.com/atakanekiz/CIPR'), "for the code to generate reference datasets.")
+          tags$li(strong("Which ImmGen datasets are implemented in CIPR?"), "ImmGen microarray data (both V1 and V2) are used in CIPR. Raw microarray data were analyzed using 'affy' package. Gene expression values were normalized using RMA method and data from biological replicates were averaged. Collectively, ImmGen V1+V2 combined dataset contains gene expression data from 296 cells including subsets of lymphocytes, myeloid cells, and stromal cells at baseline, and under various experimental manipulations")
         ),
         
         h3("Example R code to generate CIPR input"),
@@ -382,17 +332,17 @@ write.csv(cluster_markers, 'clustermarkers.csv', row.names=F)
 "),
         
         
-        # h3("CIPR Release Notes"),
-        # tags$ul(
-        #   tags$li("Release date: 12/29/2019"),
-        #   tags$li("5 different computational methods are implemented allowing the comparisons of i) all genes in the experiment, ii) differentially expressed genes in clusters."),
-        #   tags$li("ImmGen v1 and v2 data are renormalized from raw data files (.CEL), combined and pre-loaded as the reference. These two datasets contain partially overlapping cell types, and were generated using the same microarray platform (Affymetrix MoGene ST1.0 array). For further information please see ImmGen website and associated publications.")
-        # ),
+        h3("CIPR Release Notes"),
+        tags$ul(
+          tags$li("CIPR v5"),
+          tags$li("5 different computational methods are implemented allowing the comparisons of i) all genes in the experiment, ii) differentially expressed genes in clusters."),
+          tags$li("ImmGen v1 and v2 data are renormalized from raw data files (.CEL), combined and pre-loaded as the reference. These two datasets contain partially overlapping cell types, and were generated using the same microarray platform (Affymetrix MoGene ST1.0 array). For further information please see ImmGen website and associated publications.")
+        ),
         
         
         h3("Contact us"),
         p("For questions and comments:"),
-        p("atakan.ekiz@path.utah.edu"),
+        p("atakan-dot-ekiz-at-path.utah.edu"),
         p("Ryan O'Connell Lab"),
         p("Department of Pathology"),
         p("University of Utah"),
