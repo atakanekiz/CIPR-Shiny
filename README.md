@@ -1,4 +1,4 @@
-# CIPR
+# CIPR-Shiny
 
 <br>
 
