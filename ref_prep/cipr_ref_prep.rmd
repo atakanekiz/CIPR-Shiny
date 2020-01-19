@@ -1,0 +1,840 @@
+---
+title: "Prepare other reference datasets for CIPR"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+---
+
+
+# Import data
+
+
+```{r}
+
+suppressPackageStartupMessages(library(SingleR))
+suppressPackageStartupMessages(library(SummarizedExperiment))
+
+
+
+# dice <- DatabaseImmuneCellExpressionData()
+
+mmrnaseq <- MouseRNAseqData()
+
+# immgen <- ImmGenData()
+
+hsrnaseq <- MonacoImmuneData()
+
+blueprint <- BlueprintEncodeData()
+
+hpca <- HumanPrimaryCellAtlasData()
+
+hema <- NovershternHematopoieticData()
+
+sumexprs <- list(# dice = dice,
+                 mmrnaseq = mmrnaseq,
+                 # immgen = immgen,
+                 hsrnaseq = hsrnaseq, 
+                 blueprint = blueprint, 
+                 hpca = hpca, 
+                 hema = hema)
+```
+
+
+
+# Prepare expression/sample data
+
+## Automate processing with a function
+
+```{r}
+
+
+exprep <- function(sumexp_list){
+    
+    require(tibble)
+    require(SummarizedExperiment)
+    require(dplyr)
+    
+    
+    exp_dat <- list()
+    sample_dat <- list()
+    
+    
+    for(i in names(sumexp_list)){
+        
+        obj <- sumexp_list[[i]]
+        
+        # Prep expression data
+        dat <- as.data.frame(assay(obj))
+        
+        if(i == "dice") colnames(dat) <- make.names(colnames(dat), unique = T)
+        
+        dat_colnames <- colnames(dat)
+        
+        dat <- add_column(dat, Gene=rownames(dat), .after = 0)
+        
+        # exp_dat[[i]] <- dat
+        
+        # Prep sample data
+        smpl <- as.data.frame(colData(obj))
+        
+        smpl <- smpl %>%
+            add_column(short_name = rownames(smpl), .after = 0) %>%
+            rename(reference_cell_type = label.main,
+                   long_name = label.fine) %>%
+            mutate(description = "N/A")
+        
+        
+        
+        sample_names <- smpl$short_name
+        
+        smpl$reference_cell_type <- factor(smpl$reference_cell_type)
+        
+        # sample_dat[[i]] <- smpl
+        
+        
+        
+        if(sum(dat_colnames != sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched (before reordering).")
+        
+        message("reordering samples")
+        
+        
+        reorder_vector <- order(as.character(smpl$reference_cell_type))
+        
+        
+        
+        smpl <- smpl[reorder_vector, ]
+        
+        sample_dat[[i]] <- smpl
+        
+        
+        dat <- dplyr::select(dat, Gene, colnames(dat)[reorder_vector+1])
+        
+        exp_dat[[i]] <- dat
+        
+        
+        new_dat_colnames <- colnames(dat)[2:dim(dat)[2]]
+        new_sample_names <- smpl$short_name
+        
+        if(sum(new_dat_colnames != new_sample_names) != 0) message(paste("Unmatched name. Check" ,i)) else message("Column names of expression data and sample metadata is matched (after reordering).")
+        
+    }
+    
+    
+    sample_dat <<- sample_dat
+    exp_dat <<- exp_dat
+    
+}
+
+exprep(sumexprs)
+
+
+```
+
+# Prepare reference metadata
+
+## Reference cell type breakdown
+
+```{r}
+
+helper <- function(datlist){
+    
+    for(i in names(datlist)){
+        
+        
+        message(i)
+        
+        print(
+            levels(datlist[[i]]$reference_cell_type)
+        )
+        
+    }
+    
+}
+
+
+helper(sample_dat)
+
+
+
+
+
+```
+
+## Standardize reference cell type annotations
+
+```{r}
+
+trimmer <- function(df){
+  
+  df$reference_cell_type <- gsub("cells", "cell", df$reference_cell_type)
+  df$reference_cell_type <- gsub("phils", "phil", df$reference_cell_type)
+  df$reference_cell_type <- gsub("cytes", "cyte", df$reference_cell_type)
+  df$reference_cell_type <- gsub("blasts", "blast", df$reference_cell_type)
+  df$reference_cell_type <- gsub("genitors", "genitor", df$reference_cell_type)
+  df$reference_cell_type <- gsub("phages", "phage", df$reference_cell_type)
+  df$reference_cell_type <- gsub("CMPs", "CMP", df$reference_cell_type)
+  df$reference_cell_type <- gsub("GMPs", "GMP", df$reference_cell_type)
+  df$reference_cell_type <- gsub("MEPs", "MEP", df$reference_cell_type)
+  df$reference_cell_type <- gsub("HSCs", "HSC", df$reference_cell_type)
+  df$reference_cell_type <- gsub("Platelets", "Platelet", df$reference_cell_type)
+  df$reference_cell_type <- gsub("_", " ", df$reference_cell_type)
+  df$reference_cell_type <- gsub("B\\-cell", "B cell", df$reference_cell_type)
+  df$reference_cell_type <- gsub("T\\-cell", "T cell", df$reference_cell_type)
+  df$reference_cell_type <- gsub("BM & Prog\\.", "BM", df$reference_cell_type)
+  df$reference_cell_type <- gsub("HSC.*", "HSC", df$reference_cell_type)
+  df$reference_cell_type <- gsub(" CD34.*", "", df$reference_cell_type)
+  
+  df$reference_cell_type <- factor(df$reference_cell_type)
+  
+  df$reference_cell_type <- factor(df$reference_cell_type, 
+                                   levels = gtools::mixedsort(levels(df$reference_cell_type)))
+  
+  df
+  
+}
+
+sample_dat$hsrnaseq$reference_cell_type <-gsub("^T cells$", "MAIT-gdT", sample_dat$hsrnaseq$reference_cell_type)
+
+sample_dat <- lapply(sample_dat, trimmer)
+
+
+
+
+```
+
+Check renaming
+
+```{r}
+
+helper(sample_dat)
+
+```
+
+
+
+
+# Save data as rds files
+
+```{r}
+
+
+
+savefun <- function(datlist, savename){
+    
+    for(i in names(datlist)){
+        
+        saveRDS(datlist[[i]], file = paste0(i, "_", savename, ".rds"))
+        
+        
+    }
+    
+}
+
+
+savefun(exp_dat, savename = "expr")
+savefun(sample_dat, savename = "samples")
+
+```
+
+# Save data as rda files
+
+Needed for CIPR package
+
+```{r}
+
+
+saverda <- function(datlist, savename){
+    
+    for(i in names(datlist)){
+        
+        assign(paste0(i, "_", savename), datlist[[i]])
+        
+        
+        save(list = paste0(i, "_", savename),
+             file = paste0(i, "_", savename, ".rda"))
+        
+        
+    }
+    
+}
+
+
+saverda(exp_dat, savename = "expr")
+saverda(sample_dat, savename = "samples")
+
+## test 
+# load("hema_samples.rda")
+
+```
+
+
+
+
+
+# Manually prepare DICE data
+
+```{r}
+
+# Downloaded from https://dice-database.org/downloads#expression_download
+
+
+suppressPackageStartupMessages(library(dplyr))
+
+
+dice_expr <- read.csv("mean_tpm_merged.csv", stringsAsFactors = F)
+
+dice_expr[, colnames(dice_expr) != "gene"] <- log(dice_expr[, colnames(dice_expr) != "gene"]+1, base = 2)
+
+colnames(dice_expr) <- gsub("\\.\\.", ".", colnames(dice_expr))
+colnames(dice_expr) <- gsub("\\.$", "", colnames(dice_expr))
+
+library(biomaRt)
+
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+genes <- dice_expr$gene
+
+g_list <- getBM(filters= "ensembl_gene_id",
+                attributes= c("ensembl_gene_id","hgnc_symbol"),
+                values=genes, 
+                mart= mart)
+
+dice_expr <- left_join(dice_expr, g_list, by=c("gene"="ensembl_gene_id"))
+
+dice_expr <- dice_expr %>%
+  dplyr::select(-gene) %>%
+  dplyr::select(hgnc_symbol, everything()) %>%
+  dplyr::rename(gene = hgnc_symbol) %>%
+  filter(!is.na(gene))
+
+nonzero_genes <- which(rowSums(dice_expr[, 2:dim(dice_expr)[2]])!= 0)
+
+dice_expr <- dice_expr[nonzero_genes, ]
+
+
+dice_samples <- data.frame(short_name = colnames(dice_expr)[colnames(dice_expr)!="gene"],
+                         reference_cell_type = c("CD4+ T cell", 
+                                                 "NK cell", 
+                                                 rep("CD4+ T cell", 3),
+                                                 "B cell",
+                                                 rep("CD4+ T cell", 4),
+                                                 rep("Monocyte",2),
+                                                 "CD4+ T cell",
+                                                 rep("CD8+ T cell", 2)),
+                         long_name = "N/A",
+                         description = "N/A")
+
+
+dice_samples$short_name <- as.character(dice_samples$short_name)
+dice_samples$long_name <- as.character(dice_samples$long_name)
+dice_samples$description <- as.character(dice_samples$description)
+
+sum(colnames(dice_expr)[2:dim(dice_expr)[2]] != dice_samples$short_name)
+
+reorder_vector <- order(as.character(dice_samples$reference_cell_type))
+
+dice_samples <- dice_samples[reorder_vector, ]
+
+dice_expr <- dplyr::select(dice_expr, gene, colnames(dice_expr)[reorder_vector+1])
+
+sum(colnames(dice_expr)[2:dim(dice_expr)[2]] != dice_samples$short_name)
+
+save(dice_expr, file="dice_expr.rda")
+save(dice_samples, file="dice_samples.rda")
+
+saveRDS(dice_expr , "dice_expr.rds")
+saveRDS(dice_samples, "dice_samples.rds")
+
+```
+
+
+# Manually prepare ImmGen data
+
+
+## Download GEO Series Matrix file
+
+This file contains multi faceted pre-normalized data including:
+
+- Feature (gene) details
+- Sample origin and preparation 
+
+```{r, eval=F}
+# Get further information about the samples
+gse_v1 <- getGEO("GSE15907", GSEMatrix=T, destdir = getwd())
+gse_v2 <- getGEO("GSE37448", GSEMatrix=T, destdir = getwd())
+
+saveRDS(gse_v1, "gse_v1.rds")
+saveRDS(gse_v2, "gse_v2.rds")
+
+```
+
+
+```{r}
+
+suppressPackageStartupMessages(library(GEOquery))
+
+
+gse_v1 <- readRDS("gse_v1.rds")
+gse_v2 <- readRDS("gse_v2.rds")
+
+```
+
+
+## Visualize pre-normalized data
+
+- Note that v1 and v2 normalizations were done separately and the sample medians differ.
+
+```{r}
+v1_dat <- data.frame(gse_v1$GSE15907_series_matrix.txt.gz@assayData$exprs, check.names = F)
+v2_dat <- data.frame(gse_v2$GSE37448_series_matrix.txt.gz@assayData$exprs, check.names=F) 
+
+comb_dat <- cbind(v1_dat, v2_dat)
+
+
+set.seed(10)
+# Separate normalizations applied
+boxplot(log1p(v1_dat[,floor(runif(50, 1, dim(v1_dat)[2]))]))
+boxplot(log1p(v2_dat[,floor(runif(50, 1, dim(v2_dat)[2]))]))
+boxplot(log1p(comb_dat[,floor(runif(50, 1, dim(comb_dat)[2]))]))
+
+```
+
+## Prepare sample meta data
+
+```{r, eval=F}
+
+suppressPackageStartupMessages(library(dplyr))
+
+v1_meta <- gse_v1$GSE15907_series_matrix.txt.gz@phenoData@data
+v2_meta <- gse_v2$GSE37448_series_matrix.txt.gz@phenoData@data
+
+
+# Uniformize gender column
+colnames(v1_meta) <- gsub("Sex:ch1", "gender:ch1", colnames((v1_meta)))
+
+
+
+cols_to_extract <- c("title",
+                     "geo_accession", 
+                     "description", 
+                     "exclusion markers:ch1", 
+                     "phenotype markers:ch1",
+                     "source_name_ch1",
+                     "gender:ch1",
+                     "age:ch1",
+                     "genetic background:ch1")
+
+v1_meta <- v1_meta %>%
+  select(!!cols_to_extract) %>%
+  mutate(version = "v1")
+
+
+v2_meta <- v2_meta %>%
+  select(!!cols_to_extract) %>%
+  mutate(version = "v2")
+
+
+colnames(v1_meta) == colnames(v2_meta)
+
+comb_meta <- rbind(v1_meta, v2_meta)
+
+comb_meta$trimmed_title <- gsub("#[0-9]+$", "", comb_meta$title)
+
+comb_meta$ref_cell_type <- c(rep("Pre-T cell", length(1:3)),
+                                   rep("Treg", length(4:5)),
+                                   rep("Pre-T cell", length(6:8)),
+                                   rep("T cell", length(9:26)),
+                                   rep("Pre-T cell", length(27:41)),
+                                   rep("Pre-B cell", length(42:50)),
+                                   rep("Stem-Progenitor", length(51:52)),
+                                   rep("T cell", length(53:54)),
+                                   rep("B cell", length(55:60)),
+                                   rep("T cell", length(61:71)),
+                                   rep("Pre-B cell", length(72:73)),
+                                   rep("Stem-Progenitor", length(74:74)),
+                                   rep("gd-T cell", length(75:83)),
+                                   rep("Pre-B cell", length(84:86)),
+                                   rep("gd-T cell", length(87:101)),
+                                   rep("B cell", length(102:134)),
+                                   rep("DC", length(135:179)),
+                                   rep("Macrophage", length(180:182)),
+                                   rep("NK cell", length(183:211)),
+                                   rep("NKT cell", length(212:233)),
+                                   rep("Pre-B cell", length(234:249)),
+                                   rep("T cell", length(250:305)),
+                                   rep("Pro-B cell", length(306:306)),
+                                   rep("T cell", length(307:318)),
+                                   rep("gd-T cell", length(319:339)),
+                                   rep("NK cell", length(340:345)),
+                                   rep("DC", length(346:365)),
+                                   rep("Granulocyte", length(366:369)),
+                                   rep("Macrophage", length(370:387)),
+                                   rep("Monocyte", length(388:404)),
+                                   rep("T cell", length(405:425)),
+                                   rep("B cell", length(426:430)),
+                                   rep("Stromal", length(431:468)),
+                                   rep("Stem-Progenitor", length(469:500)),
+                                   rep("Pre-T cell", length(501:523)),
+                                   rep("B cell", length(524:526)),
+                                   rep("DC", length(527:528)),
+                                   rep("Macrophage", length(529:539)),
+                                   rep("DC", length(540:541)),
+                                   rep("Macrophage", length(542:543)),
+                                   rep("DC", length(544:546)),
+                                   rep("Macrophage", length(547:555)),
+                                   rep("DC", length(556:561)),
+                                   rep("Macrophage", length(562:564)),
+                                   rep("DC", length(565:569)),
+                                   rep("Stromal", length(570:570)),
+                                   rep("Granulocyte", length(571:582)),
+                                   rep("Macrophage", length(583:594)),
+                                   rep("Monocyte", length(595:600)),
+                                   rep("Pre-T cell", length(601:603)),
+                                   rep("Granulocyte", length(604:606)),
+                                   rep("gd-T cell", length(607:624)),
+                                   rep("T cell", length(625:632)),
+                                   rep("Treg", length(633:638)),
+                                   rep("Macrophage", length(639:641)),
+                                   rep("Stromal", length(642:650)),
+                                   rep("Pre-B cell", length(651:653)),
+                                   rep("gd-T cell", length(654:661)),
+                                   rep("Macrophage", length(662:667)),
+                                   rep("Monocyte", length(668:674)),
+                                   rep("B cell", length(675:677)),
+                                   rep("DC", length(678:682)),
+                                   rep("Stromal", length(683:686)),
+                                   rep("Eosinophil", length(687:690)),
+                                   rep("Stromal", length(691:695)),
+                                   rep("Granulocyte", length(696:699)),
+                                   rep("Stromal", length(700:702)),
+                                   rep("Macrophage", length(703:705)),
+                                   rep("T cell", length(706:714)),
+                                   rep("Macrophage", length(715:720)),
+                                   rep("T cell", length(721:742)),
+                                   rep("Monocyte", length(743:745)),
+                                   rep("ILC-1", length(746:753)),
+                                   rep("ILC-2", length(754:755)),
+                                   rep("ILC-3", length(756:763)),
+                                   rep("NK cell", length(764:771)),
+                                   rep("Basophil", length(772:777)),
+                                   rep("Stromal", length(778:790)),
+                                   rep("Mast cell", length(791:810)),
+                                   rep("Stromal", length(811:819)),
+                                   rep("Macrophage", length(820:825)),
+                                   rep("T cell", length(826:842)))
+
+
+saveRDS(comb_meta, "combined_meta.rds")
+
+```
+
+## Prepare feature meta data
+
+```{r, eval=F}
+
+feat_v1 <- featureData(gse_v1$GSE15907_series_matrix.txt.gz) 
+feat_v2 <- featureData(gse_v2$GSE37448_series_matrix.txt.gz)
+
+# Ensure feature data are the same (same platforms)
+identical(feat_v1, feat_v2)
+
+feat_metadata <- feat_v1@data
+
+
+gene_name_grabber <- function(x) {
+  
+  tmp <- unlist(strsplit(x, " \\/\\/ "))
+  tmp[2]
+}
+
+feat_metadata$gene_id <- unname(sapply(feat_metadata$gene_assignment, gene_name_grabber))
+
+feat_metadata$ID <- as.character(feat_metadata$ID)
+
+
+
+
+```
+
+
+
+## Analyze RAW data from CEL files
+
+
+### Download CEL files
+
+```{r, eval=F}
+
+dir.create("CEL_files")
+
+getGEOSuppFiles("GSE15907", baseDir = "CEL_files/")
+getGEOSuppFiles("GSE37448", baseDir = "CEL_files/")
+
+```
+
+
+
+### Create RMA-normalized data object (instead of this, do prefiltering)
+
+
+```{r, eval=F}
+
+suppressPackageStartupMessages(library(affy))
+
+eset <- justRMA(celfile.path = "CEL_files/")
+
+saveRDS(eset, "eset.rds")
+
+```
+
+### Prepare gene expression dataset
+
+#### Average probes targeting the same gene
+
+```{r, eval=F}
+
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(dplyr))
+
+
+
+eset <- readRDS("eset.rds")
+
+dat <- data.table(eset@assayData$exprs, keep.rownames = T, check.names = F)
+
+# Shorten column names
+colnames(dat) <- gsub("_.+", "", colnames(dat))
+
+anyDuplicated(colnames(dat))
+
+
+feat_annot <- fread("GPL6246-18741.txt") # Downloaded from GEO (GPL6246)
+
+
+gene_info_grab <- function(x, slot_to_grab){
+  
+  tmp <- unlist(strsplit(x, " \\/\\/ "))
+  
+  tmp[slot_to_grab]
+  
+}
+
+feat_annot$gene_symbol <- unname(sapply(feat_annot$gene_assignment, gene_info_grab, slot_to_grab = 2))
+feat_annot$gene_description <- unname(sapply(feat_annot$gene_assignment, gene_info_grab, slot_to_grab = 3))
+feat_annot$ID <- as.character(feat_annot$ID)
+
+
+feat_gene_df <- select(feat_annot, ID, gene_symbol)
+
+dat_crunch <- as.data.table(left_join(dat, feat_gene_df, by=c("rn"="ID")))
+
+dat_crunch <- dat_crunch[, -c("rn")]
+
+dat_crunch <- dat_crunch[ , lapply(.SD, mean), by=gene_symbol]
+
+dat_crunch <- dat_crunch[!is.na(gene_symbol), ]
+
+setcolorder(dat_crunch, c("gene_symbol",colnames(dat_crunch)[!(colnames(dat_crunch) %in% c("gene_symbol"))]))
+
+```
+
+#### Average biological replicates
+
+```{r, eval=F}
+
+t_dat <- transpose(dat_crunch[, -c("gene_symbol")])
+
+colnames(t_dat) <- dat_crunch$gene_symbol
+
+t_dat$ID <- colnames(dat_crunch)[!colnames(dat_crunch) %in% c("gene_symbol")]
+
+setcolorder(t_dat, c("ID",colnames(t_dat)[!(colnames(t_dat) %in% c("ID"))]))
+
+
+
+comb_meta <- readRDS("combined_meta.rds")
+
+meta_df <- select(comb_meta, geo_accession, trimmed_title)
+
+t_dat_crunch <- as.data.table(left_join(t_dat, meta_df, by = c("ID"="geo_accession")))
+
+t_dat_crunch <- t_dat_crunch[, -c("ID")]
+
+t_dat_crunch <- t_dat_crunch[, lapply(.SD, mean), by=trimmed_title]
+
+cols <- colnames(t_dat_crunch[, -c("trimmed_title")])
+rows <- t_dat_crunch$trimmed_title
+
+immgen <- transpose(t_dat_crunch[, -c("trimmed_title")])
+
+colnames(immgen) <- rows
+
+immgen$GeneName <- tolower(cols)
+
+immgen <- select(immgen, GeneName, everything())
+
+
+##############################################################
+saveRDS(immgen, "immgen.rds")
+##############################################################
+
+
+```
+
+
+#### Plot overall gene expression
+
+```{r, fig.width=16, fig.height=4}
+
+immgen <- data.frame(readRDS("immgen.rds"), check.names = F)
+
+boxplot(immgen[,colnames(immgen) != "GeneName"])
+
+```
+
+
+#### Ensure the gene expression profiles are retained as expected
+
+```{r, fig.height=5, fig.width=8}
+
+suppressPackageStartupMessages(library(data.table))
+
+immgen <- readRDS("immgen.rds")
+
+boxplot(immgen[GeneName == "cd3e", c("T.8Eff.Sp.OT1.d10.LisOva",
+                                  "Tgd.vg3+24ahi.e17.Th",
+                                  "Mo.6C+II-.BM", 
+                                  "MF.II+480lo.PC",
+                                  "B.Fo.Sp",
+                                  "DC.103+11b-.Lu",
+                                  "MC.PC")],
+        las=2)
+
+boxplot(immgen[GeneName == "cd19", c("T.8Eff.Sp.OT1.d10.LisOva",
+                                  "Tgd.vg3+24ahi.e17.Th",
+                                  "Mo.6C+II-.BM", 
+                                  "MF.II+480lo.PC",
+                                  "B.Fo.Sp",
+                                  "DC.103+11b-.Lu",
+                                  "MC.PC")],
+        las=2)
+
+```
+
+## Sample metadata
+
+```{r}
+
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(dplyr))
+
+immgen <- readRDS("immgen.rds")
+comb_meta <- readRDS("combined_meta.rds")
+
+comb_meta_dedup <- comb_meta[!duplicated(comb_meta$trimmed_title), ]
+
+
+
+popinfo <- fread("popinfo.txt")
+colnames(popinfo) <- c("short_name", "long_name", "description", "v4", "v5", "v6")
+
+popinfo$short_name <-gsub("_", "\\.", popinfo$short_name)
+
+
+
+
+
+samples <- colnames(immgen)[colnames(immgen) != "GeneName"]
+
+sample_meta <- data.frame(short_name = samples) 
+
+sample_meta2 <- left_join(sample_meta, popinfo)
+
+sample_meta3 <- inner_join(sample_meta2, comb_meta_dedup, by=c("short_name"="trimmed_title"))
+
+
+sample_meta3$description <- paste("Phenotype markers:", sample_meta3$`phenotype markers:ch1`, "//",
+                                  "Exclusion markers:", sample_meta3$`exclusion markers:ch1`, "//",
+                                  "Tissue:", sample_meta3$source_name_ch1, "//", 
+                                  "Age:", sample_meta3$`age:ch1`, "//",
+                                  "Gender:", sample_meta3$`gender:ch1`, "//",
+                                  "Genetic background:", sample_meta3$`genetic background:ch1`, "//",
+                                  "ImmGen release:", sample_meta3$version)
+
+# Export sample metadata and edit manually in excel
+
+write.csv(sample_meta3, "sample_meta3.csv")
+
+# Read file back into R after manually editing
+
+sample_meta3 <- read.csv("sample_meta3.csv")
+
+immgen_annot <- select(sample_meta3, short_name, long_name, ref_cell_type, description)
+
+colnames(immgen_annot) <- gsub("ref_", "reference_", colnames(immgen_annot)) # match the CIPR column naming
+
+immgen_annot$long_name <- gsub("ï", "i", immgen_annot$long_name)
+
+
+###################################################################
+saveRDS(immgen_annot, "immgen_annot.rds")
+###################################################################
+
+
+ann <- readRDS("immgen_annot.rds")
+
+ann$short_name <- as.character(ann$short_name)
+ann$description <- as.character(ann$description)
+
+saveRDS(ann, "immgen_annot.rds")
+
+immgen_samples <- ann
+
+save(immgen_samples, file="immgen_samples.rda")
+
+
+```
+
+
+## Reorder samples
+
+```{r}
+
+# immgen <- readRDS("immgen.rds")
+# immgen_annot <- readRDS("immgen_annot.rds")
+
+# saveRDS(immgen, "immgen_original.rds")
+# saveRDS(immgen_annot, "immgen_annot_original.rds")
+
+# immgen <- readRDS("immgen_original.rds")
+# immgen_annot <- readRDS("immgen_annot_original.rds")
+
+sum(colnames(immgen[, 2:dim(immgen)[2]]) != immgen_annot$short_name)
+
+reorder_vector <- order(as.character(immgen_annot$reference_cell_type))
+
+immgen_annot <- immgen_annot[reorder_vector, ]
+
+immgen <- dplyr::select(immgen, GeneName, colnames(immgen)[reorder_vector+1])
+
+
+sum(colnames(immgen[, 2:dim(immgen)[2]]) != immgen_annot$short_name)
+
+
+saveRDS(immgen, "immgen.rds")
+saveRDS(immgen_annot, "immgen_annot.rds")
+
+immgen_samples <- immgen_annot
+immgen_expr <- immgen
+
+save(immgen_expr, file="immgen_expr.rda")
+save(immgen_samples, file="immgen_samples.rda")
+
+```
+
+
+
+
+

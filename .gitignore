@@ -1,4 +1,3 @@
-rsconnect/
-.Rhistory
 benchmarking/
-test.rmd
+.RHistory
+rsconnect/
