@@ -111,7 +111,7 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
       
       tabsetPanel(
         
-        tabPanel("Top-5 hits",
+        tabPanel("Top-5 hits", onclick = "ga('send', 'event', 'click', 'link')",
                  
                  fluidRow(
                    plotOutput("top5", brush = "brushtop5", height="600px"),
@@ -134,7 +134,7 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
         ),
         
         
-        tabPanel("Individual Clusters",
+        tabPanel("Individual Clusters", onclick = "ga('send', 'event', 'click', 'link')",
                  
                  # This is the dynamic UI for the plots to be generated for each cluster
                  
@@ -146,12 +146,12 @@ ui <- fluidPage(theme=shinytheme("spacelab"),
                  )       
         ),
         
-        tabPanel("Analysis details",
+        tabPanel("Analysis details", onclick = "ga('send', 'event', 'click', 'link')",
                  
                  verbatimTextOutput(outputId="console", placeholder = T)
                  ),
         
-        tabPanel("How to use this program",
+        tabPanel("How to use this program", onclick = "ga('send', 'event', 'click', 'link')",
                  
                  h3("Summary"),
                  p("Understanding the biological identity of cell clusters in single cell RNA sequencing (scRNAseq) experiments can be challenging due to overlapping gene expression profiles. An accurate assessment of the cluster identity requires analyzing multiple genes simultaneously as opposed to examining a few selected lineage-specific markers. Cluster Identity PRedictor (CIPR) compares user-provided scRNAseq cluster gene signatures with known reference datasets --or with a custom reference--, and calculates an", strong('identity score (IS)'), "for each scRNAseq cluster per reference cell subset. For further information about how to use CIPR, please read the sections below."),

@@ -396,7 +396,7 @@ server <- function(input, output){
 
 
   # Read reference dataset
-  ref_data <- reactive({
+  ref_data <- eventReactive(input$run, {
 
     # if(grepl("logFC", input$comp_method)){
 
@@ -618,7 +618,7 @@ server <- function(input, output){
   # Read immgen annotation file for explanations of cell types
 
 
-  reference_annotation <- reactive({
+  reference_annotation <- eventReactive(input$run, {
 
     if(input$sel_reference == "ImmGen (mouse)"){
 
@@ -1079,10 +1079,32 @@ server <- function(input, output){
 
 
   ################################################################################################################################
+  # Prepare distinctive colors by shuffling the order of rainbow colors
+
+usecolors <- reactive({
+  
+  
+  
+  
+  colnum <- length(levels(as.factor(reference_annotation()$reference_cell_type)))
+  
+  
+  cols <- colorspace::rainbow_hcl(colnum, c = 90, l = 75, start = 0, end = 330,
+              gamma = NULL, fixup = TRUE, alpha = 1)
+  
+  set.seed(5)
+  
+  cols <- sample(cols, size = length(cols), replace = F)
+  
+  cols
+  
+  
+})
+
+  
+  
+  
   # Prepare individual plots
-
-
-
   # # Call renderPlot for each one. Plots are only actually generated when they
   # # are visible on the web page.
 
@@ -1122,7 +1144,7 @@ server <- function(input, output){
             df_plot_brushed <<- df_plot
 
             # Plot identity scores per cluster per reference cell type and add confidence bands
-            p <- ggdotplot(df_plot, x = "reference_id", y="identity_score",
+            p <- ggdotplot(df_plot, x = "reference_id", y="identity_score", palette = usecolors(),
                            fill = "reference_cell_type", xlab=F, ylab="Reference identity score",
                            font.y = c(14, "bold", "black"), size=1, x.text.angle=90,
                            title = paste("Cluster:",my_i), font.title = c(15, "bold.italic"),
